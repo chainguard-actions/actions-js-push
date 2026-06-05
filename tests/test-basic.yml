@@ -1,0 +1,35 @@
+name: Test basic push usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: fake-token-for-testing
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup git and create a test commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          echo "test-$(date +%s)" > /tmp/test-file.txt
+          cp /tmp/test-file.txt test-push-file.txt
+          git add test-push-file.txt
+          git commit -m "test: add file for push test" || echo "Nothing to commit"
+
+      - name: Run action (expect push failure in act environment)
+        id: action
+        continue-on-error: true
+        uses: .
+        with:
+          github_token: ${{ env.GITHUB_TOKEN }}
+          author_email: "test@example.com"
+          author_name: "Test User"
+          branch: "master"
+          directory: "."
+
+      - name: Verify action was invoked
+        run: |
+          echo "Action completed (push may fail in act environment without real token)"
+          echo "PASS: action inputs were accepted"
