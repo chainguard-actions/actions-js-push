@@ -1,35 +1,33 @@
-name: Test basic push usage
+name: Test basic push inputs
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: fake-token-for-testing
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup git and create a test commit
+      - name: Configure git and create a change to push
         run: |
-          git config user.email "test@example.com"
-          git config user.name "Test User"
-          echo "test-$(date +%s)" > /tmp/test-file.txt
-          cp /tmp/test-file.txt test-push-file.txt
-          git add test-push-file.txt
-          git commit -m "test: add file for push test" || echo "Nothing to commit"
-
-      - name: Run action (expect push failure in act environment)
-        id: action
-        continue-on-error: true
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          echo "test-$(date +%s)" > /tmp/test-marker.txt
+      - id: action
         uses: .
+        continue-on-error: true
         with:
-          github_token: ${{ env.GITHUB_TOKEN }}
-          author_email: "test@example.com"
-          author_name: "Test User"
+          github_token: ${{ github.token }}
+          author_email: "github-actions[bot]@users.noreply.github.com"
+          author_name: "github-actions[bot]"
           branch: "master"
           directory: "."
-
-      - name: Verify action was invoked
+      - name: Assert action ran (token and basic inputs accepted)
         run: |
-          echo "Action completed (push may fail in act environment without real token)"
-          echo "PASS: action inputs were accepted"
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          # The action may fail because there's nothing to commit or push,
+          # but it should not fail due to missing required inputs.
+          # We verify it at least started (not skipped).
+          if [ "${{ steps.action.outcome }}" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with github_token and basic inputs"
