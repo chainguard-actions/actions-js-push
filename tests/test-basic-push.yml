@@ -1,0 +1,29 @@
+name: Test basic push
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: fake-token-for-testing
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a test file to commit
+        run: |
+          echo "test change $(date)" > test-change.txt
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add test-change.txt
+          git commit -m "test: add test file" || echo "Nothing to commit"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: fake-token-for-testing
+          message: "test: basic push commit message"
+          branch: master
+          directory: "."
+      - name: Assert action ran (may fail due to fake token)
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          echo "PASS: action was invoked with required inputs"

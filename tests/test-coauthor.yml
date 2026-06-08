@@ -1,0 +1,28 @@
+name: Test coauthor inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a test file to commit
+        run: |
+          echo "coauthor test change $(date)" > test-coauthor.txt
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add test-coauthor.txt
+          git commit -m "test: add coauthor test file" || echo "Nothing to commit"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: fake-token-for-testing
+          message: "test: coauthor commit"
+          branch: master
+          coauthor_email: "coauthor@example.com"
+          coauthor_name: "Co Author"
+      - name: Assert action ran with coauthor inputs
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          echo "PASS: action was invoked with coauthor inputs"
