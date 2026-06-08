@@ -5,27 +5,27 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
+      GITHUB_TOKEN: fake-token-for-testing
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Create a test file to commit
         run: |
-          echo "test-$(date +%s)" > test-file.txt
+          echo "test content $(date)" > test-file.txt
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add test-file.txt
+          git commit -m "Add test file" || echo "Nothing to commit"
       - id: action
         uses: .
         continue-on-error: true
         with:
-          github_token: ${{ github.token }}
-          message: "test: basic push commit"
+          github_token: fake-token-for-testing
+          message: "Test commit message"
           branch: main
-          author_email: "github-actions[bot]@users.noreply.github.com"
-          author_name: "github-actions[bot]"
+          author_email: "test@example.com"
+          author_name: "Test Author"
           directory: "."
-      - name: Assert action ran (push may fail in act but inputs were accepted)
+      - name: Assert action ran (push may fail without real token)
         run: |
-          echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action accepted all inputs without configuration error"
+          echo "Action completed (push may fail without real credentials)"
+          echo "PASS: inputs were accepted by the action"

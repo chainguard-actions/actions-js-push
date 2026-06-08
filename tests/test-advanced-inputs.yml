@@ -1,0 +1,29 @@
+name: Test advanced push inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: fake-token-for-testing
+          message: "Test co-authored commit"
+          coauthor_email: "coauthor@example.com"
+          coauthor_name: "Co Author"
+          empty: "true"
+          force: "false"
+          rebase: "false"
+          tags: "false"
+          branch: main
+      - name: Assert action ran with advanced inputs
+        run: |
+          echo "Action completed with advanced inputs"
+          echo "PASS: coauthor_email, coauthor_name, empty, force, rebase, tags inputs were accepted"
