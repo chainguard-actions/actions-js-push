@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v1.1 | [`v1.1`](https://github.com/chainguard-actions/actions-js-push/tree/v1.1) | [`d7b8891`](https://github.com/actions-js/push/commit/d7b88913126db478c7daff06ce8a97ae826fd7f5) |
+| v1.5 | [`v1.5`](https://github.com/chainguard-actions/actions-js-push/tree/v1.5) | [`5a7cbd7`](https://github.com/actions-js/push/commit/5a7cbd780d82c0c937b5977586e641b2fd94acc5) |
 
 ## Privacy
 
