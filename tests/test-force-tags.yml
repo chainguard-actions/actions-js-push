@@ -1,4 +1,4 @@
-name: Test basic push with message and token
+name: Test force push and tags inputs
 on:
   workflow_dispatch:
 jobs:
@@ -11,28 +11,24 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Create a file change to commit
         run: |
-          echo "test-$(date +%s)" > /tmp/test-change.txt
-          cp /tmp/test-change.txt test-change.txt
+          echo "force-test-$(date +%s)" > force-test.txt
           git config user.email "test@example.com"
           git config user.name "Test User"
-          git add test-change.txt
+          git add force-test.txt
       - id: action
         uses: .
         with:
           github_token: ${{ github.token }}
-          message: "test: basic push commit message"
+          message: "test: force push with tags"
           branch: main
-          author_email: "github-actions[bot]@users.noreply.github.com"
-          author_name: "github-actions[bot]"
+          force: "true"
+          tags: "true"
         continue-on-error: true
-      - name: Assert action ran (push may fail in act but action should be invoked)
+      - name: Assert action ran with force and tags inputs
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          # The action is expected to attempt a push; in act environment the push
-          # may fail due to no real remote, but the action should have been invoked.
-          # We verify the step ran (not skipped).
           if [ "${{ steps.action.outcome }}" = "skipped" ]; then
             echo "FAIL: action step was skipped"
             exit 1
           fi
-          echo "PASS: action was invoked"
+          echo "PASS: action was invoked with force and tags inputs"

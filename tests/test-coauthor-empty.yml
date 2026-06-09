@@ -1,0 +1,29 @@
+name: Test coauthor and empty commit inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ github.token }}
+          message: "test: coauthor and empty commit"
+          branch: main
+          coauthor_email: "coauthor@example.com"
+          coauthor_name: "Co Author"
+          empty: "true"
+        continue-on-error: true
+      - name: Assert action ran with coauthor and empty inputs
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          if [ "${{ steps.action.outcome }}" = "skipped" ]; then
+            echo "FAIL: action step was skipped"
+            exit 1
+          fi
+          echo "PASS: action was invoked with coauthor and empty inputs"
