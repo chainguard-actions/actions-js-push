@@ -1,17 +1,66 @@
-# actions-js/push
+# GitHub Action for GitHub Commit & Push
 
-Push changes made by actions right back into the current repository.
+The GitHub Actions for commiting & pushing to GitHub repository local changes authorizing using GitHub token.
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/actions-js/push](https://github.com/actions-js/push).
+With ease:
+- update new code placed in the repository, e.g. by running a linter on it,
+- track changes in script results using Git as archive,
+- publish page using GitHub-Pages,
+- mirror changes to a separate repository.
 
-## Versions
+## Usage
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v1.1 | [`v1.1`](https://github.com/chainguard-actions/actions-js-push/tree/v1.1) | [`d7b8891`](https://github.com/actions-js/push/commit/d7b88913126db478c7daff06ce8a97ae826fd7f5) |
-| v1.2 | [`v1.2`](https://github.com/chainguard-actions/actions-js-push/tree/v1.2) | [`4decc28`](https://github.com/actions-js/push/commit/4decc2887d2770f29177082be3c8b04d342f5b64) |
-| v1.3 | [`v1.3`](https://github.com/chainguard-actions/actions-js-push/tree/v1.3) | [`a52398f`](https://github.com/actions-js/push/commit/a52398fac807b0c1e5f1492c969b477c8560a0ba) |
-| v1.5 | [`v1.5`](https://github.com/chainguard-actions/actions-js-push/tree/v1.5) | [`5a7cbd7`](https://github.com/actions-js/push/commit/5a7cbd780d82c0c937b5977586e641b2fd94acc5) |
+### Example Workflow file
+
+An example workflow to authenticate with GitHub Platform:
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      with:
+        persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+        fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+    - name: Create local changes
+      run: |
+        ...
+    - name: Commit & Push changes
+      uses: actions-js/push@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Inputs
+
+| name           | value   | default                     | description |
+| -------------- | ------  | --------------------------- | ----------- |
+| github_token   | string  |                             | Token for the repo. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`. |
+| author_email   | string  | 'github-actions[bot]@users.noreply.github.com' | Email used to configure user.email in `git config`. |
+| author_name    | string  | 'github-actions[bot]'       | Name used to configure user.name in `git config`. |
+| coauthor_email | string  |                             | Email used to make a co-authored commit. |
+| coauthor_name  | string  |                             | Name used to make a co-authored commit. |
+| message        | string  | 'chore: autopublish ${date}' | Commit message. |
+| branch         | string  | 'main'                    | Destination branch to push changes. |
+| empty          | boolean | false                       | Allow empty commit. |
+| amend          | boolean | false                       | Determines if the commit should be amended. Needs to be used with `force` input to force push the amended commit. |
+| force          | boolean | false                       | Determines if force push is used. |
+| tags           | boolean | false                       | Determines if `--tags` is used. |
+| directory      | string  | '.'                         | Directory to change to before pushing. |
+| repository     | string  | ''                          | Repository name. Default or empty repository name represents current github repository. If you want to push to other repository, you should make a [personal access token](https://github.com/settings/tokens) and use it as the `github_token` input.  |
+
+## License
+
+The Dockerfile and associated scripts and documentation in this project are released under the [MIT License](LICENSE).
+
+## Credits
+
+This is a slight modification of the [ad-m/github-push-action](https://github.com/ad-m/github-push-action) action.
+
+## No affiliation with GitHub Inc.
+
+GitHub are registered trademarks of GitHub, Inc. GitHub name used in this project are for identification purposes only. The project is not associated in any way with GitHub Inc. and is not an official solution of GitHub Inc. It was made available in order to facilitate the use of the site GitHub.
 
 ## Privacy
 
