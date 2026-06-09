@@ -1,4 +1,4 @@
-name: Test basic push
+name: Test coauthor commit
 on:
   workflow_dispatch:
 jobs:
@@ -11,18 +11,18 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Create a file to commit
         run: |
-          echo "test-$(date +%s)" > test-file.txt
+          echo "coauthor-test-$(date +%s)" > coauthor-test-file.txt
       - id: action
         uses: .
         with:
           github_token: ${{ github.token }}
-          message: "test: basic push commit"
+          message: "test: coauthor commit"
           branch: main
-          author_email: "test@example.com"
-          author_name: "Test User"
-          directory: "."
+          coauthor_email: "coauthor@example.com"
+          coauthor_name: "Co Author"
+          empty: "true"
         continue-on-error: true
       - name: Assert action ran
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed"
+          echo "PASS: action step with coauthor inputs executed"
