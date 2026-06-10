@@ -1,4 +1,4 @@
-name: Test basic push
+name: Test advanced inputs
 on:
   workflow_dispatch:
 jobs:
@@ -13,24 +13,24 @@ jobs:
         run: |
           git config --global user.email "test@example.com"
           git config --global user.name "Test User"
-      - name: Create a test file to commit
-        run: |
-          echo "test-$(date +%s)" > /tmp/test-artifact.txt
       - id: action
         uses: .
         with:
           github_token: ${{ github.token }}
-          message: "test: basic push commit"
+          message: "test: advanced inputs commit"
           branch: main
           author_email: "test-bot@example.com"
           author_name: "Test Bot"
+          coauthor_email: "coauthor@example.com"
+          coauthor_name: "Co Author"
+          empty: "true"
+          force: "false"
+          tags: "false"
           directory: "."
         continue-on-error: true
       - name: Assert action ran
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          # The action may fail if there's nothing to push or auth issues in act,
-          # but we verify it was invoked with the correct inputs
           if [ "${{ steps.action.outcome }}" = "" ]; then
             echo "FAIL: action did not run"
             exit 1
