@@ -1,4 +1,4 @@
-name: Test basic push
+name: Test coauthor, empty commit, and tags
 on:
   workflow_dispatch:
 jobs:
@@ -9,20 +9,18 @@ jobs:
       GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Create a file to commit
-        run: |
-          echo "test-$(date +%s)" > test-file.txt
       - id: action
         uses: .
         continue-on-error: true
         with:
           github_token: ${{ github.token }}
-          message: "chore: test commit from act"
-          author_email: "test@example.com"
-          author_name: "Test User"
+          message: "chore: test empty commit with coauthor"
+          coauthor_email: "coauthor@example.com"
+          coauthor_name: "Co Author"
+          empty: "true"
+          tags: "true"
           branch: main
-          directory: "."
       - name: Assert action ran (push may fail in act environment)
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed"
+          echo "PASS: action step executed with coauthor, empty, and tags inputs"

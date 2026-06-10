@@ -18,25 +18,9 @@ REPOSITORY=${INPUT_REPOSITORY:-$GITHUB_REPOSITORY}
 
 echo "Push to branch $INPUT_BRANCH";
 [ -z "${INPUT_GITHUB_TOKEN}" ] && {
-    echo 'Missing input "github_token: ${{ secrets.GITHUB_TOKEN }}".';
+    echo 'Missing input "github_token: ${{ secrets.GITHUB_TOKEN }}".'
     exit 1;
 };
-
-if ${INPUT_EMPTY}; then
-    _EMPTY='--allow-empty'
-fi
-
-if ${INPUT_AMEND}; then
-    _AMEND='--amend --no-edit'
-fi
-
-if ${INPUT_FORCE}; then
-    _FORCE_OPTION='--force'
-fi
-
-if ${INPUT_TAGS}; then
-    _TAGS='--tags'
-fi
 
 cd "${INPUT_DIRECTORY}"
 
@@ -48,22 +32,38 @@ git config --local user.name "${INPUT_AUTHOR_NAME}"
 
 git add -A
 
-if ${INPUT_AMEND}; then
+if [ "${INPUT_AMEND}" = "true" ]; then
     if [ -n "${INPUT_COAUTHOR_EMAIL}" ] && [ -n "${INPUT_COAUTHOR_NAME}" ]; then
-        git commit ${_AMEND} -m "${INPUT_MESSAGE}
+        git commit --amend --no-edit -m "${INPUT_MESSAGE}
 
     Co-authored-by: ${INPUT_COAUTHOR_NAME} <${INPUT_COAUTHOR_EMAIL}>" || exit 0
+    elif [ "${INPUT_EMPTY}" = "true" ]; then
+        git commit --amend --no-edit --allow-empty -m "${INPUT_MESSAGE}" || exit 0
     else
-    git commit ${_AMEND} -m "${INPUT_MESSAGE}" $_EMPTY || exit 0
+        git commit --amend --no-edit -m "${INPUT_MESSAGE}" || exit 0
     fi
-
 elif [ -n "${INPUT_COAUTHOR_EMAIL}" ] && [ -n "${INPUT_COAUTHOR_NAME}" ]; then
-    git commit -m "${INPUT_MESSAGE}
+    if [ "${INPUT_EMPTY}" = "true" ]; then
+        git commit --allow-empty -m "${INPUT_MESSAGE}
     
-
-Co-authored-by: ${INPUT_COAUTHOR_NAME} <${INPUT_COAUTHOR_EMAIL}>" $_EMPTY || exit 0
+Co-authored-by: ${INPUT_COAUTHOR_NAME} <${INPUT_COAUTHOR_EMAIL}>" || exit 0
+    else
+        git commit -m "${INPUT_MESSAGE}
+    
+Co-authored-by: ${INPUT_COAUTHOR_NAME} <${INPUT_COAUTHOR_EMAIL}>" || exit 0
+    fi
+elif [ "${INPUT_EMPTY}" = "true" ]; then
+    git commit --allow-empty -m "${INPUT_MESSAGE}" || exit 0
 else
-    git commit -m "${INPUT_MESSAGE}" $_EMPTY || exit 0
+    git commit -m "${INPUT_MESSAGE}" || exit 0
 fi
 
-git push "${remote_repo}" HEAD:"${INPUT_BRANCH}" --follow-tags $_FORCE_OPTION $_TAGS;
+if [ "${INPUT_FORCE}" = "true" ] && [ "${INPUT_TAGS}" = "true" ]; then
+    git push "${remote_repo}" HEAD:"${INPUT_BRANCH}" --follow-tags --force --tags
+elif [ "${INPUT_FORCE}" = "true" ]; then
+    git push "${remote_repo}" HEAD:"${INPUT_BRANCH}" --follow-tags --force
+elif [ "${INPUT_TAGS}" = "true" ]; then
+    git push "${remote_repo}" HEAD:"${INPUT_BRANCH}" --follow-tags --tags
+else
+    git push "${remote_repo}" HEAD:"${INPUT_BRANCH}" --follow-tags
+fi
