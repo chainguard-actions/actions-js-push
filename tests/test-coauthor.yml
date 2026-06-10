@@ -9,20 +9,28 @@ jobs:
       GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Create a file to commit
+
+      - name: Setup git and make a change
         run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
           echo "coauthor-test-$(date +%s)" > coauthor-test-file.txt
-      - id: action
+          git add coauthor-test-file.txt
+
+      - name: Run action with coauthor inputs (push may fail in act environment)
+        id: action
+        continue-on-error: true
         uses: .
         with:
           github_token: ${{ github.token }}
           message: "test: coauthor commit"
           branch: main
+          author_email: "test@example.com"
+          author_name: "Test User"
           coauthor_email: "coauthor@example.com"
           coauthor_name: "Co Author"
-          empty: "true"
-        continue-on-error: true
-      - name: Assert action ran
+
+      - name: Verify action ran
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step with coauthor inputs executed"
+          echo "PASS: action step executed with coauthor inputs"

@@ -1,4 +1,4 @@
-name: Test basic push with message
+name: Test force push with tags and empty commit
 on:
   workflow_dispatch:
 jobs:
@@ -10,25 +10,26 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup git and make a change
+      - name: Setup git
         run: |
           git config user.email "test@example.com"
           git config user.name "Test User"
-          echo "test-$(date +%s)" > test-file.txt
-          git add test-file.txt
 
-      - name: Run action (push may fail in act environment, that is expected)
+      - name: Run action with force, tags, and empty inputs (push may fail in act environment)
         id: action
         continue-on-error: true
         uses: .
         with:
           github_token: ${{ github.token }}
-          message: "test: basic push commit"
+          message: "test: force push with tags and empty"
           branch: main
           author_email: "test@example.com"
           author_name: "Test User"
+          force: "true"
+          tags: "true"
+          empty: "true"
 
       - name: Verify action ran
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed (push may fail in act due to no remote)"
+          echo "PASS: action step executed with force, tags, and empty inputs"
