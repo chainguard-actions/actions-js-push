@@ -13,6 +13,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v1.3 | [`v1.3`](https://github.com/chainguard-actions/actions-js-push/tree/v1.3) | [`a52398f`](https://github.com/actions-js/push/commit/a52398fac807b0c1e5f1492c969b477c8560a0ba) |
 | v1.4 | [`v1.4`](https://github.com/chainguard-actions/actions-js-push/tree/v1.4) | [`156f2b1`](https://github.com/actions-js/push/commit/156f2b10c3aa000c44dbe75ea7018f32ae999772) |
 | v1.5 | [`v1.5`](https://github.com/chainguard-actions/actions-js-push/tree/v1.5) | [`5a7cbd7`](https://github.com/actions-js/push/commit/5a7cbd780d82c0c937b5977586e641b2fd94acc5) |
+| v1.6 | [`v1.6`](https://github.com/chainguard-actions/actions-js-push/tree/v1.6) | [`968f469`](https://github.com/actions-js/push/commit/968f4695ca558093eadb24ad83cc5891f47e0cdc) |
 
 ## Privacy
 
