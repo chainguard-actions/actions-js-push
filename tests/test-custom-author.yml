@@ -1,0 +1,47 @@
+name: Test custom author name and email
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with custom author settings
+        id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          message: 'test: custom author commit'
+          author_name: 'Custom Bot'
+          author_email: 'custom-bot@example.com'
+
+      - name: Assert action succeeded
+        run: |
+          echo "outcome: ${{ steps.action.outcome }}"
+          if [ "${{ steps.action.outcome }}" != "success" ]; then
+            echo "FAIL: expected action to succeed"
+            exit 1
+          fi
+          echo "PASS: action succeeded"
+
+      - name: Assert git user.name was configured correctly
+        run: |
+          ACTUAL=$(git config --local user.name)
+          echo "actual user.name: $ACTUAL"
+          if [ "$ACTUAL" != "Custom Bot" ]; then
+            echo "FAIL: expected user.name to be 'Custom Bot', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: user.name is correct"
+
+      - name: Assert git user.email was configured correctly
+        run: |
+          ACTUAL=$(git config --local user.email)
+          echo "actual user.email: $ACTUAL"
+          if [ "$ACTUAL" != "custom-bot@example.com" ]; then
+            echo "FAIL: expected user.email to be 'custom-bot@example.com', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: user.email is correct"

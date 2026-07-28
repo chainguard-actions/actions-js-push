@@ -1,0 +1,52 @@
+name: Test co-author commit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Record current HEAD commit SHA before action
+        id: before
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "HEAD before: $SHA"
+
+      - name: Run action with co-author settings and empty commit
+        id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          message: 'test: co-authored commit'
+          empty: 'true'
+          coauthor_name: 'Co Author'
+          coauthor_email: 'coauthor@example.com'
+        continue-on-error: true
+
+      - name: Assert a new commit was created locally
+        run: |
+          BEFORE="${{ steps.before.outputs.sha }}"
+          AFTER=$(git rev-parse HEAD)
+          echo "HEAD before: $BEFORE"
+          echo "HEAD after:  $AFTER"
+          if [ "$BEFORE" = "$AFTER" ]; then
+            echo "FAIL: HEAD did not advance — commit was not created"
+            exit 1
+          fi
+          echo "PASS: a new commit was created"
+
+      - name: Assert co-author trailer is present in commit message
+        run: |
+          BODY=$(git log -1 --pretty=%B)
+          echo "commit body:"
+          echo "$BODY"
+          if ! echo "$BODY" | grep -q "Co-authored-by: Co Author <coauthor@example.com>"; then
+            echo "FAIL: expected Co-authored-by trailer not found in commit message"
+            exit 1
+          fi
+          echo "PASS: co-author trailer is present"

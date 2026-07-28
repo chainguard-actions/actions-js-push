@@ -1,0 +1,59 @@
+name: Test empty commit creation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Record current HEAD commit SHA before action
+        id: before
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "HEAD before: $SHA"
+
+      - name: Run action with empty=true
+        id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          message: 'test: empty commit from act test'
+          empty: 'true'
+        continue-on-error: true
+
+      - name: Assert a new commit was created locally
+        run: |
+          BEFORE="${{ steps.before.outputs.sha }}"
+          AFTER=$(git rev-parse HEAD)
+          echo "HEAD before: $BEFORE"
+          echo "HEAD after:  $AFTER"
+          if [ "$BEFORE" = "$AFTER" ]; then
+            echo "FAIL: HEAD did not advance — empty commit was not created"
+            exit 1
+          fi
+          echo "PASS: a new commit was created"
+
+      - name: Assert commit message is correct
+        run: |
+          MSG=$(git log -1 --pretty=%s)
+          echo "commit message: $MSG"
+          if [ "$MSG" != "test: empty commit from act test" ]; then
+            echo "FAIL: expected commit message 'test: empty commit from act test', got '$MSG'"
+            exit 1
+          fi
+          echo "PASS: commit message is correct"
+
+      - name: Assert commit author name is default
+        run: |
+          AUTHOR=$(git log -1 --pretty=%an)
+          echo "author name: $AUTHOR"
+          if [ "$AUTHOR" != "github-actions[bot]" ]; then
+            echo "FAIL: expected author 'github-actions[bot]', got '$AUTHOR'"
+            exit 1
+          fi
+          echo "PASS: author name is correct"
