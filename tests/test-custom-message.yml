@@ -1,0 +1,71 @@
+name: Test custom commit message and author
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git and set up local remote to intercept push
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+          # Create a test file to commit
+          echo "test-$(date +%s)" > tests/test-artifact.txt
+
+          # Create a bare repo to receive the push
+          git init --bare /tmp/fake-remote.git
+          git push /tmp/fake-remote.git HEAD:refs/heads/act-harness
+
+          # Create a git wrapper that redirects push to local bare repo
+          mkdir -p /tmp/git-wrapper
+          printf '%s\n' '#!/bin/sh' \
+            'if [ "$1" = "push" ]; then' \
+            '  shift' \
+            '  newargs=""' \
+            '  for arg in "$@"; do' \
+            '    case "$arg" in' \
+            '      https://*) newargs="$newargs /tmp/fake-remote.git" ;;' \
+            '      *) newargs="$newargs $arg" ;;' \
+            '    esac' \
+            '  done' \
+            '  eval exec /usr/bin/git push $newargs' \
+            'fi' \
+            'exec /usr/bin/git "$@"' > /tmp/git-wrapper/git
+          chmod +x /tmp/git-wrapper/git
+          echo "/tmp/git-wrapper" >> "$GITHUB_PATH"
+
+      - id: action
+        name: Run push action with custom message and author
+        uses: .
+        env:
+          GITHUB_ACTOR: "test-actor"
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          message: "test: custom message from act test suite"
+          author_email: "custom-author@example.com"
+          author_name: "Custom Test Author"
+
+      - name: Assert action completed successfully and commit has correct author
+        run: |
+          echo "Action completed without error"
+          # The action commits locally then pushes; verify the local commit author
+          LAST_AUTHOR=$(git log -1 --format="%ae")
+          echo "Last commit author email: $LAST_AUTHOR"
+          if [ "$LAST_AUTHOR" != "custom-author@example.com" ]; then
+            echo "FAIL: expected author email 'custom-author@example.com' but got '$LAST_AUTHOR'"
+            exit 1
+          fi
+          # Also verify the commit message
+          LAST_MSG=$(git log -1 --format="%s")
+          echo "Last commit message: $LAST_MSG"
+          if [ "$LAST_MSG" != "test: custom message from act test suite" ]; then
+            echo "FAIL: expected commit message 'test: custom message from act test suite' but got '$LAST_MSG'"
+            exit 1
+          fi
+          echo "PASS: commit made with correct author and message"

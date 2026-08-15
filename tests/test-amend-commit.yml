@@ -1,0 +1,66 @@
+name: Test amend commit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git and create an initial commit to amend
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          echo "initial-$(date +%s)" > tests/test-amend-artifact.txt
+          git add tests/test-amend-artifact.txt
+          git commit -m "test: initial commit to be amended"
+
+          # Create a bare repo to receive the push (include the new commit)
+          git init --bare /tmp/fake-remote.git
+          git push /tmp/fake-remote.git HEAD:refs/heads/act-harness
+
+          # Create a git wrapper that redirects push to local bare repo
+          mkdir -p /tmp/git-wrapper
+          printf '%s\n' '#!/bin/sh' \
+            'if [ "$1" = "push" ]; then' \
+            '  shift' \
+            '  newargs=""' \
+            '  for arg in "$@"; do' \
+            '    case "$arg" in' \
+            '      https://*) newargs="$newargs /tmp/fake-remote.git" ;;' \
+            '      *) newargs="$newargs $arg" ;;' \
+            '    esac' \
+            '  done' \
+            '  eval exec /usr/bin/git push $newargs' \
+            'fi' \
+            'exec /usr/bin/git "$@"' > /tmp/git-wrapper/git
+          chmod +x /tmp/git-wrapper/git
+          echo "/tmp/git-wrapper" >> "$GITHUB_PATH"
+
+      - id: action
+        name: Run push action with amend=true
+        uses: .
+        env:
+          GITHUB_ACTOR: "test-actor"
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          amend: "true"
+          force: "true"
+          message: "test: amended commit message"
+          author_email: "test@example.com"
+          author_name: "Test User"
+
+      - name: Assert action completed successfully
+        run: |
+          echo "Action completed without error"
+          # Verify the amended commit message
+          LAST_MSG=$(git log -1 --format="%s")
+          echo "Last commit message: $LAST_MSG"
+          if [ "$LAST_MSG" != "test: amended commit message" ]; then
+            echo "FAIL: expected amended commit message but got '$LAST_MSG'"
+            exit 1
+          fi
+          echo "PASS: amend commit push succeeded"

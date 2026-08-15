@@ -1,0 +1,74 @@
+name: Test rebase before push
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git and set up local remote to intercept push
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+          # Create a test file to commit
+          echo "rebase-test-$(date +%s)" > tests/test-rebase-artifact.txt
+
+          # Create a bare repo to receive the push
+          git init --bare /tmp/fake-remote.git
+          git push /tmp/fake-remote.git HEAD:refs/heads/act-harness
+
+          # Create a git wrapper that redirects push and pull to local bare repo
+          mkdir -p /tmp/git-wrapper
+          printf '%s\n' '#!/bin/sh' \
+            'if [ "$1" = "push" ]; then' \
+            '  shift' \
+            '  newargs=""' \
+            '  for arg in "$@"; do' \
+            '    case "$arg" in' \
+            '      https://*) newargs="$newargs /tmp/fake-remote.git" ;;' \
+            '      *) newargs="$newargs $arg" ;;' \
+            '    esac' \
+            '  done' \
+            '  eval exec /usr/bin/git push $newargs' \
+            'elif [ "$1" = "pull" ]; then' \
+            '  shift' \
+            '  newargs=""' \
+            '  for arg in "$@"; do' \
+            '    case "$arg" in' \
+            '      https://*) newargs="$newargs /tmp/fake-remote.git" ;;' \
+            '      *) newargs="$newargs $arg" ;;' \
+            '    esac' \
+            '  done' \
+            '  eval exec /usr/bin/git pull $newargs' \
+            'fi' \
+            'exec /usr/bin/git "$@"' > /tmp/git-wrapper/git
+          chmod +x /tmp/git-wrapper/git
+          echo "/tmp/git-wrapper" >> "$GITHUB_PATH"
+
+      - id: action
+        name: Run push action with rebase=true
+        uses: .
+        env:
+          GITHUB_ACTOR: "test-actor"
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          message: "test: rebase push from act test suite"
+          author_email: "test@example.com"
+          author_name: "Test User"
+          rebase: "true"
+
+      - name: Assert action completed successfully with rebase
+        run: |
+          echo "Action completed without error"
+          LAST_MSG=$(git log -1 --format="%s")
+          echo "Last commit message: $LAST_MSG"
+          if [ "$LAST_MSG" != "test: rebase push from act test suite" ]; then
+            echo "FAIL: expected commit message 'test: rebase push from act test suite' but got '$LAST_MSG'"
+            exit 1
+          fi
+          echo "PASS: rebase push succeeded"

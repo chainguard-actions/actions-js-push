@@ -1,0 +1,36 @@
+name: Test missing github_token fails
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+      - id: action
+        name: Run push action without token (should fail)
+        uses: .
+        with:
+          github_token: ""
+          branch: act-harness
+          empty: "true"
+          message: "test: should not reach push"
+        continue-on-error: true
+
+      - name: Assert action failed due to missing token
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail when github_token is empty, but got: $OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action correctly failed with missing token"

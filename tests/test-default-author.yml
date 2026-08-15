@@ -1,0 +1,44 @@
+name: Test default author configuration
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: test-actor
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a test file to commit
+        run: echo "default author test" > test-default-author.txt
+
+      - id: action
+        name: Run action with default author (push will fail in test env)
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: 'fake-token-for-testing'
+          message: 'test: default author values'
+          branch: main
+          empty: 'true'
+
+      - name: Assert default git user.email was configured
+        run: |
+          EMAIL=$(git config --local user.email || echo "")
+          echo "git user.email: $EMAIL"
+          if [ "$EMAIL" != "github-actions[bot]@users.noreply.github.com" ]; then
+            echo "FAIL: expected default git user.email, got '$EMAIL'"
+            exit 1
+          fi
+          echo "PASS: default git user.email correctly set"
+
+      - name: Assert default git user.name was configured
+        run: |
+          NAME=$(git config --local user.name || echo "")
+          echo "git user.name: $NAME"
+          if [ "$NAME" != "github-actions[bot]" ]; then
+            echo "FAIL: expected default git user.name 'github-actions[bot]', got '$NAME'"
+            exit 1
+          fi
+          echo "PASS: default git user.name correctly set"

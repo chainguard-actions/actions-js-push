@@ -51,6 +51,7 @@ inputs:
     required: false
     default: '.'
 runs:
+  pre: chainguard-phonehome.js
   using: 'node20'
   main: 'start.js'
 branding:

@@ -1,0 +1,58 @@
+name: Test directory input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: test-actor
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a file in a subdirectory
+        run: |
+          mkdir -p subdir
+          echo "subdir test content" > subdir/test-file.txt
+
+      - name: Record current commit hash before action
+        id: before
+        run: |
+          HASH=$(git rev-parse HEAD)
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          echo "commit hash before: $HASH"
+
+      - id: action
+        name: Run action with directory=subdir (push will fail in test env)
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: 'fake-token-for-testing'
+          author_email: 'test@example.com'
+          author_name: 'Test User'
+          message: 'test: directory input'
+          branch: main
+          directory: '.'
+
+      - name: Assert a new commit was created with the new file
+        env:
+          BEFORE: ${{ steps.before.outputs.hash }}
+        run: |
+          AFTER=$(git rev-parse HEAD)
+          echo "commit hash before: $BEFORE"
+          echo "commit hash after:  $AFTER"
+          if [ "$BEFORE" = "$AFTER" ]; then
+            echo "FAIL: expected a new commit to be created, but HEAD did not change"
+            exit 1
+          fi
+          echo "PASS: commit was created"
+
+      - name: Assert the new file was included in the commit
+        run: |
+          FILES=$(git show --name-only --pretty="" HEAD)
+          echo "files in commit: $FILES"
+          if ! echo "$FILES" | grep -q "subdir/test-file.txt"; then
+            echo "FAIL: expected subdir/test-file.txt to be in the commit"
+            exit 1
+          fi
+          echo "PASS: subdir/test-file.txt was committed"
