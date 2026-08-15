@@ -1,4 +1,4 @@
-name: Test commit with co-author
+name: Test push from subdirectory
 on:
   workflow_dispatch:
 jobs:
@@ -15,14 +15,14 @@ jobs:
           git config user.name "Test User"
 
           # Create a local bare repo to receive the push
-          git init --bare /tmp/test-remote-coauthor.git
-          git push /tmp/test-remote-coauthor.git HEAD:refs/heads/act-harness
+          git init --bare /tmp/test-remote-directory.git
+          git push /tmp/test-remote-directory.git HEAD:refs/heads/act-harness
 
           # Find the real git binary (before we shadow it)
           REAL_GIT="$(which git)"
 
           # Create a fake git wrapper that redirects github.com pushes to local repo
-          mkdir -p /tmp/fake-git-coauthor
+          mkdir -p /tmp/fake-git-directory
           {
             echo '#!/bin/sh'
             echo "REAL_GIT=\"$REAL_GIT\""
@@ -31,42 +31,41 @@ jobs:
             echo '  newargs=""'
             echo '  for arg in "$@"; do'
             echo '    case "$arg" in'
-            echo '      https://*github.com*) arg="file:///tmp/test-remote-coauthor.git" ;;'
+            echo '      https://*github.com*) arg="file:///tmp/test-remote-directory.git" ;;'
             echo '    esac'
             echo '    newargs="${newargs:+$newargs }$arg"'
             echo '  done'
             echo '  exec "$REAL_GIT" push $newargs'
             echo 'fi'
             echo 'exec "$REAL_GIT" "$@"'
-          } > /tmp/fake-git-coauthor/git
-          chmod +x /tmp/fake-git-coauthor/git
+          } > /tmp/fake-git-directory/git
+          chmod +x /tmp/fake-git-directory/git
           # Verify the fake git works
-          /tmp/fake-git-coauthor/git --version
+          /tmp/fake-git-directory/git --version
 
-      - name: Create a test file to commit
+      - name: Create a test file in the workspace
         run: |
-          echo "coauthor-test-$(date +%s)" > tests/test-coauthor-temp.txt
-          echo "Created test file for co-author test"
+          echo "directory-test-$(date +%s)" > tests/test-directory-temp.txt
+          echo "Created test file"
 
-      - name: Run action with co-author information
+      - name: Run action with directory input pointing to tests subdirectory
         id: action
         uses: .
         env:
           GITHUB_ACTOR: x-access-token
-          PATH: /tmp/fake-git-coauthor:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          PATH: /tmp/fake-git-directory:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         with:
           github_token: ${{ github.token }}
           branch: act-harness
           author_email: test@example.com
           author_name: Test User
-          coauthor_email: coauthor@example.com
-          coauthor_name: Co Author
+          directory: tests
           force: 'true'
 
-      - name: Assert action completed successfully
+      - name: Assert action completed successfully from subdirectory
         run: |
-          echo "PASS: action committed and pushed with co-author successfully"
+          echo "PASS: action completed operating from subdirectory"
 
       - name: Clean up temp file
         if: always()
-        run: rm -f tests/test-coauthor-temp.txt
+        run: rm -f tests/test-directory-temp.txt

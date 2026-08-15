@@ -1,0 +1,42 @@
+name: Test tags push
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up git and create a tag to push
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          # Create a lightweight tag on the current commit
+          git tag test-tags-v0.0.1
+          # Set up a bare repo inside workspace so origin is reachable inside the action container
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git push "$GITHUB_WORKSPACE/.git-remote" --tags
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          tags: "true"
+
+      - name: Assert tags were pushed
+        run: |
+          # Verify the tag exists in the remote bare repo
+          TAG=$(git -C "$GITHUB_WORKSPACE/.git-remote" tag -l "test-tags-v0.0.1")
+          echo "tag in remote: $TAG"
+          if [ "$TAG" != "test-tags-v0.0.1" ]; then
+            echo "FAIL: expected tag 'test-tags-v0.0.1' to be present in remote"
+            exit 1
+          fi
+          echo "PASS: tag was pushed successfully"
