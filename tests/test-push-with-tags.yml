@@ -1,0 +1,51 @@
+name: Test push with tags
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up git config and create a tag
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          # Create a lightweight tag to push along with commits
+          git tag v0.0.1-test-tags || true
+
+      - name: Set up a git origin reachable inside the Node action
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git push "$GITHUB_WORKSPACE/.git-remote" --tags
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - name: Create a file to commit
+        run: |
+          echo "tags-test-$(date +%s)" > tags-test-file.txt
+
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: act-harness
+          message: "test: push with tags flag"
+          tags: "true"
+          author_email: "test@example.com"
+          author_name: "Test User"
+
+      - name: Assert push succeeded
+        run: |
+          # Verify the commit was pushed to our bare remote
+          COUNT=$(git -C "$GITHUB_WORKSPACE/.git-remote" log --oneline refs/heads/act-harness | wc -l)
+          echo "Commit count in remote: $COUNT"
+          if [ "$COUNT" -lt 1 ]; then
+            echo "FAIL: expected at least one commit in remote"
+            exit 1
+          fi
+          echo "PASS: push with tags succeeded"

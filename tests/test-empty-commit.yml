@@ -1,4 +1,4 @@
-name: Test basic push
+name: Test empty commit
 on:
   workflow_dispatch:
 jobs:
@@ -25,27 +25,26 @@ jobs:
           echo "/tmp/fake-bin" >> "$GITHUB_PATH"
           echo "Fake git installed and added to PATH"
 
-      - name: Configure git and create a test file to commit
+      - name: Configure git
         run: |
           git config user.email "test@example.com"
           git config user.name "Test User"
-          echo "test-$(date +%s)" > tests/test-artifact-basic.txt
-          git add tests/test-artifact-basic.txt
 
-      - name: Push changes via action
+      - name: Push empty commit via action
         id: push
         uses: .
         with:
           github_token: ${{ github.token }}
           author_email: "test@example.com"
           author_name: "Test User"
-          message: "test: basic push from act test"
+          message: "test: empty commit from act test"
           branch: act-harness
+          empty: "true"
           force: "true"
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Assert push succeeded
+      - name: Assert empty commit push succeeded
         run: |
-          echo "PASS: action completed without error"
+          echo "PASS: empty commit action completed without error"

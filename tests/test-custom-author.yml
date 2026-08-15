@@ -1,4 +1,4 @@
-name: Test basic push
+name: Test custom author and co-author
 on:
   workflow_dispatch:
 jobs:
@@ -27,25 +27,27 @@ jobs:
 
       - name: Configure git and create a test file to commit
         run: |
-          git config user.email "test@example.com"
-          git config user.name "Test User"
-          echo "test-$(date +%s)" > tests/test-artifact-basic.txt
-          git add tests/test-artifact-basic.txt
+          git config user.email "custom-author@example.com"
+          git config user.name "Custom Author"
+          echo "coauthor-test-$(date +%s)" > tests/test-artifact-coauthor.txt
+          git add tests/test-artifact-coauthor.txt
 
-      - name: Push changes via action
+      - name: Push with custom author and co-author
         id: push
         uses: .
         with:
           github_token: ${{ github.token }}
-          author_email: "test@example.com"
-          author_name: "Test User"
-          message: "test: basic push from act test"
+          author_email: "custom-author@example.com"
+          author_name: "Custom Author"
+          coauthor_email: "coauthor@example.com"
+          coauthor_name: "Co Author"
+          message: "test: custom author and co-author from act test"
           branch: act-harness
           force: "true"
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Assert push succeeded
+      - name: Assert action completed successfully
         run: |
-          echo "PASS: action completed without error"
+          echo "PASS: action completed without error with custom author and co-author"

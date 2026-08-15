@@ -1,0 +1,62 @@
+name: Test git config and empty commit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: test-actor
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up a local bare remote so push succeeds
+        run: |
+          git config --global user.email "setup@test.com"
+          git config --global user.name "Setup User"
+          # Create a local bare repo to act as the remote
+          git init --bare /tmp/test-remote.git
+          git remote add localremote /tmp/test-remote.git
+          git push localremote HEAD:main
+
+      - name: Run action with custom author and empty commit
+        id: action
+        uses: .
+        with:
+          github_token: 'fake-token-for-testing'
+          author_email: 'custom@example.com'
+          author_name: 'Custom Author'
+          message: 'test: empty commit from act'
+          branch: 'main'
+          empty: 'true'
+        continue-on-error: true
+
+      - name: Verify git user.email was configured
+        run: |
+          EMAIL=$(git config --local user.email)
+          echo "user.email: $EMAIL"
+          if [ "$EMAIL" != "custom@example.com" ]; then
+            echo "FAIL: expected user.email 'custom@example.com', got '$EMAIL'"
+            exit 1
+          fi
+          echo "PASS: user.email correctly set"
+
+      - name: Verify git user.name was configured
+        run: |
+          NAME=$(git config --local user.name)
+          echo "user.name: $NAME"
+          if [ "$NAME" != "Custom Author" ]; then
+            echo "FAIL: expected user.name 'Custom Author', got '$NAME'"
+            exit 1
+          fi
+          echo "PASS: user.name correctly set"
+
+      - name: Verify empty commit was created
+        run: |
+          MSG=$(git log -1 --pretty=%s)
+          echo "last commit message: $MSG"
+          if [ "$MSG" != "test: empty commit from act" ]; then
+            echo "FAIL: expected commit message 'test: empty commit from act', got '$MSG'"
+            exit 1
+          fi
+          echo "PASS: empty commit created with correct message"

@@ -1,0 +1,49 @@
+name: Test default author configuration
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: test-actor
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up a local bare remote so push succeeds
+        run: |
+          git config --global user.email "setup@test.com"
+          git config --global user.name "Setup User"
+          git init --bare /tmp/test-remote.git
+          git remote add localremote /tmp/test-remote.git
+          git push localremote HEAD:main
+
+      - name: Run action with default author settings and empty commit
+        id: action
+        uses: .
+        with:
+          github_token: 'fake-token-for-testing'
+          message: 'test: default author commit'
+          branch: 'main'
+          empty: 'true'
+        continue-on-error: true
+
+      - name: Verify default git user.email was configured
+        run: |
+          EMAIL=$(git config --local user.email)
+          echo "user.email: $EMAIL"
+          if [ "$EMAIL" != "github-actions[bot]@users.noreply.github.com" ]; then
+            echo "FAIL: expected default user.email 'github-actions[bot]@users.noreply.github.com', got '$EMAIL'"
+            exit 1
+          fi
+          echo "PASS: default user.email correctly set"
+
+      - name: Verify default git user.name was configured
+        run: |
+          NAME=$(git config --local user.name)
+          echo "user.name: $NAME"
+          if [ "$NAME" != "github-actions[bot]" ]; then
+            echo "FAIL: expected default user.name 'github-actions[bot]', got '$NAME'"
+            exit 1
+          fi
+          echo "PASS: default user.name correctly set"
